@@ -1,22 +1,34 @@
 
 from fastapi import FastAPI, Query, Body, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 app = FastAPI(title="Mini Blog")
 
 BLOG_POST = [
-    {"id": 1, "title": "Hola desde FastAPI", "Content":"Mi primer post con FastAPI"},
-    {"id": 2, "title": "Mi segundo Post con FastAPI", "Content":"Mi segundo post con FastAPI blablabla"},
-    {"id": 3, "title": "Django vs FastAPI", "Content":"FastAPI es más rápido por x razones"},
+    {"id": 1, "title": "Hola desde FastAPI", "content":"Mi primer post con FastAPI"},
+    {"id": 2, "title": "Mi segundo Post con FastAPI", "content":"Mi segundo post con FastAPI blablabla"},
+    {"id": 3, "title": "Django vs FastAPI", "content":"FastAPI es más rápido por x razones"},
 ]
 
 class PostBase(BaseModel):
     title: str
     content: Optional[str] = "Contenido no disponible"
 
-class PostCreate(PostBase):
-    pass
+class PostCreate(BaseModel):
+    title: str = Field(
+        ...,
+        min_length=3,
+        max_length=100,
+        description="Titulo del post (mínimo 3 caracteres, máximo 100)",
+        examples=["Mi primer post con FastAPI"]
+    )
+    content: Optional[str] = Field(
+        default="Contenido no disponible",
+        min_length=10,
+        description="Contenido del post (mínimo 10 caracteres)",
+        examples=["Este es un contenido válido porque tiene 10 caracteres o más"]
+    )
 
 class PostUpdate(BaseModel):
     title: str
