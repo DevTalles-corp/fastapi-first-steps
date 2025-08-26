@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, Query, Body, HTTPException
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, List, Union
 
 app = FastAPI(title="Mini Blog")
 
@@ -13,7 +13,7 @@ BLOG_POST = [
 
 class PostBase(BaseModel):
     title: str
-    content: Optional[str] = "Contenido no disponible"
+    content: str
 
 class PostCreate(BaseModel):
     title: str = Field(
@@ -41,48 +41,54 @@ class PostUpdate(BaseModel):
     title: str
     content: Optional[str] = None
 
+class PostPublic(PostBase):
+    id: int
+    
+class PostSummary(BaseModel):
+    id:int
+    title: str
+
 
 @app.get("/")
 def home():
     return {'message': 'Bienvenidos a Mini Blog por Devtalles'}
 
 
-@app.get("/posts")
+@app.get("/posts", response_model=List[PostPublic])
 def list_posts(query: str | None = Query(default=None, description="Texto para buscar por título")):
     
     if query:
-        results = [post for post in BLOG_POST if query.lower() in  post["title"].lower() ]
-        return {"data": results, "query": query}
+        return [post for post in BLOG_POST if query.lower() in  post["title"].lower() ]
     
-    return {"data": BLOG_POST}
+    return BLOG_POST
  
  
-@app.get("/posts/{post_id}")
+@app.get("/posts/{post_id}", response_model=Union[PostPublic, PostSummary], response_description="Post encontrado")
 def get_post(post_id: int, include_content: bool = Query(default=True, description="Incluir o no el contenido")):
     for post in BLOG_POST:
         if post["id"] == post_id:
             if not include_content:
                 return {"id": post["id"], "title": post["title"]}
-            return {"data": post}
+            return post
     
-    return {"error": "Post no encontrado"}
+    return HTTPException(status_code=404, detail="Post no encontrado")
 
-@app.post("/posts")
+@app.post("/posts", response_model=PostPublic, response_description="Post creado (OK)")
 def create_post(post: PostCreate):
     new_id = (BLOG_POST[-1]["id"]+1) if BLOG_POST else 1
     new_post = {"id": new_id, "title": post.title, "content": post.content}
     BLOG_POST.append(new_post)
-    return {"message": "Post creado", "data": new_post}
+    return new_post
 
 
-@app.put("/posts/{post_id}")
+@app.put("/posts/{post_id}", response_model=PostPublic, response_description="Post actualizado", response_model_exclude_none=True)
 def update_post(post_id: int, data: PostUpdate):
     for post in BLOG_POST:
         if post["id"] == post_id:
             playload = data.model_dump(exclude_unset=True) # {"title": "Ricardo", "content": None}
             if "title" in playload: post["title"] = playload["title"]
             if "content" in playload: post["content"] = playload["content"]
-            return {"message": "Post actualizado", "data": post}
+            return post
     
     raise HTTPException(status_code=404, detail="Post no encontrado")
 
