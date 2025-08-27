@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, Query, Body, HTTPException, Path
 from pydantic import BaseModel, Field, field_validator, EmailStr
-from typing import Optional, List, Union
+from typing import Optional, List, Union, Literal
 
 app = FastAPI(title="Mini Blog")
 
@@ -11,6 +11,30 @@ BLOG_POST = [
     {"id": 2, "title": "Mi segundo Post con FastAPI",
         "content": "Mi segundo post con FastAPI blablabla"},
     {"id": 3, "title": "Django vs FastAPI",
+        "content": "FastAPI es más rápido por x razones"},
+    {"id": 4, "title": "Hola desde FastAPI",
+        "content": "Mi primer post con FastAPI"},
+    {"id": 5, "title": "Mi segundo Post con FastAPI",
+        "content": "Mi segundo post con FastAPI blablabla"},
+    {"id": 6, "title": "Django vs FastAPI",
+        "content": "FastAPI es más rápido por x razones"},
+    {"id": 7, "title": "Hola desde FastAPI",
+        "content": "Mi primer post con FastAPI"},
+    {"id": 8, "title": "Mi segundo Post con FastAPI",
+        "content": "Mi segundo post con FastAPI blablabla"},
+    {"id": 9, "title": "Django vs FastAPI",
+        "content": "FastAPI es más rápido por x razones"},
+    {"id": 10, "title": "Hola desde FastAPI",
+        "content": "Mi primer post con FastAPI"},
+    {"id": 11, "title": "Mi segundo Post con FastAPI",
+        "content": "Mi segundo post con FastAPI blablabla"},
+    {"id": 12, "title": "Django vs FastAPI",
+        "content": "FastAPI es más rápido por x razones"},
+    {"id": 13, "title": "Hola desde FastAPI",
+        "content": "Mi primer post con FastAPI"},
+    {"id": 14, "title": "Mi segundo Post con FastAPI",
+        "content": "Mi segundo post con FastAPI blablabla"},
+    {"id": 15, "title": "Django vs FastAPI",
         "content": "FastAPI es más rápido por x razones"},
 ]
 
@@ -84,12 +108,33 @@ def list_posts(query: Optional[str] = Query(
     min_length=3,
     max_length=50,
     pattern=r"^[\w\sáéíóúÁÉÍÓÚüÜ-]+$"
-)):
+),
+    limit: int = Query(
+        10, ge=1, le=50,
+        description="Número de resultados (1-50)"
+),
+    offset: int = Query(
+        0, ge=0,
+        description="Elementos a saltar antes de empezar la lista"
+),
+    order_by: Literal["id", "title"] = Query(
+        "id", description="Campo de orden"
+),
+    direction: Literal["asc", "desc"] = Query(
+        "asc", description="Dirección de orden"
+)
+):
+
+    results = BLOG_POST
 
     if query:
-        return [post for post in BLOG_POST if query.lower() in post["title"].lower()]
+        results = [post for post in results if query.lower()
+                   in post["title"].lower()]
 
-    return BLOG_POST
+    results = sorted(
+        results, key=lambda post: post[order_by], reverse=(direction == "desc"))
+
+    return results[offset: offset + limit]
 
 
 @app.get("/posts/{post_id}", response_model=Union[PostPublic, PostSummary], response_description="Post encontrado")
