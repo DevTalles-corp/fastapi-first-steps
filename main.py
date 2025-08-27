@@ -12,7 +12,12 @@ BLOG_POST = [
     {"id": 2, "title": "Mi segundo Post con FastAPI",
         "content": "Mi segundo post con FastAPI blablabla"},
     {"id": 3, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones"},
+        "content": "FastAPI es más rápido por x razones",
+        "tags": [
+            {"name": "Python"},
+            {"name": "fastapi"},
+            {"name": "Django"}
+        ]},
     {"id": 4, "title": "Hola desde FastAPI",
         "content": "Mi primer post con FastAPI"},
     {"id": 5, "title": "Mi segundo Post con FastAPI",
@@ -30,13 +35,23 @@ BLOG_POST = [
     {"id": 11, "title": "Mi segundo Post con FastAPI",
         "content": "Mi segundo post con FastAPI blablabla"},
     {"id": 12, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones"},
+        "content": "FastAPI es más rápido por x razones",
+        "tags": [
+            {"name": "Python"},
+            {"name": "fastapi"},
+            {"name": "Django"}
+        ]},
     {"id": 13, "title": "Hola desde FastAPI",
         "content": "Mi primer post con FastAPI"},
     {"id": 14, "title": "Mi segundo Post con FastAPI",
         "content": "Mi segundo post con FastAPI blablabla"},
     {"id": 15, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones"},
+        "content": "FastAPI es más rápido por x razones",
+        "tags": [
+            {"name": "Python"},
+            {"name": "fastapi"},
+            {"name": "Django"}
+        ]},
 ]
 
 
@@ -177,6 +192,21 @@ def list_posts(query: Optional[str] = Query(
         search=query,
         items=items
     )
+
+
+@app.get("/posts/by-tags", response_model=List[PostPublic])
+def filter_by_tags(
+    tags: List[str] = Query(
+        ...,
+        min_length=2,
+        description="Una o más etiquetas. Ejemplo: ?tags=python&tags=fastapi"
+    )
+):
+    tags_lower = [tag.lower() for tag in tags]
+
+    return [
+        post for post in BLOG_POST if any(tag["name"].lower() in tags_lower for tag in post.get("tags", []))
+    ]
 
 
 @app.get("/posts/{post_id}", response_model=Union[PostPublic, PostSummary], response_description="Post encontrado")
