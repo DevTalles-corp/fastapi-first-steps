@@ -95,12 +95,19 @@ class PostSummary(BaseModel):
     title: str
 
 
+class PaginatedPost(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: List[PostPublic]
+
+
 @app.get("/")
 def home():
     return {'message': 'Bienvenidos a Mini Blog por Devtalles'}
 
 
-@app.get("/posts", response_model=List[PostPublic])
+@app.get("/posts", response_model=PaginatedPost)
 def list_posts(query: Optional[str] = Query(
     default=None,
     description="Texto para buscar por título",
@@ -131,10 +138,14 @@ def list_posts(query: Optional[str] = Query(
         results = [post for post in results if query.lower()
                    in post["title"].lower()]
 
+    total = len(results)
+
     results = sorted(
         results, key=lambda post: post[order_by], reverse=(direction == "desc"))
 
-    return results[offset: offset + limit]
+    items = results[offset: offset + limit]
+
+    return PaginatedPost(total=total, limit=limit, offset=offset, items=items)
 
 
 @app.get("/posts/{post_id}", response_model=Union[PostPublic, PostSummary], response_description="Post encontrado")
@@ -189,3 +200,35 @@ def delete_post(post_id: int):
             BLOG_POST.pop(index)
             return
     raise HTTPException(status_code=404, detail="Post no encontrado")
+
+
+"""
+{
+  "page": 2,
+  "per_page": 3,
+  "total": 8,
+  "total_pages": 3,
+  "has_prev": true,
+  "has_next": true,
+  "order_by": "title",
+  "direction": "asc",
+  "search": "fastapi",
+  "items": [
+    {
+      "id": 4,
+      "title": "FastAPI avanzado",
+      "content": "Ejemplo de post avanzado"
+    },
+    {
+      "id": 5,
+      "title": "FastAPI básico",
+      "content": "Ejemplo de post básico"
+    },
+    {
+      "id": 6,
+      "title": "FastAPI con seguridad",
+      "content": "Post sobre seguridad con FastAPI"
+    }
+  ]
+}
+"""
