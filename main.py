@@ -1,8 +1,23 @@
 
+import os
 from fastapi import FastAPI, Query, Body, HTTPException, Path
 from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List, Union, Literal
 from math import ceil
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./blog.db")
+print("Conectado a: ", DATABASE_URL)
+
+engine_kwargs = {}
+if DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, echo=True, future=True, **engine_kwargs)
+
+SessionLocal = sessionmaker(
+    bind=engine, autoflush=False, autocommit=False, class_=Session)
 
 app = FastAPI(title="Mini Blog")
 
@@ -269,35 +284,3 @@ def delete_post(post_id: int):
             BLOG_POST.pop(index)
             return
     raise HTTPException(status_code=404, detail="Post no encontrado")
-
-
-"""
-{
-  "page": 2,
-  "per_page": 3,
-  "total": 8,
-  "total_pages": 3,
-  "has_prev": true,
-  "has_next": true,
-  "order_by": "title",
-  "direction": "asc",
-  "search": "fastapi",
-  "items": [
-    {
-      "id": 4,
-      "title": "FastAPI avanzado",
-      "content": "Ejemplo de post avanzado"
-    },
-    {
-      "id": 5,
-      "title": "FastAPI básico",
-      "content": "Ejemplo de post básico"
-    },
-    {
-      "id": 6,
-      "title": "FastAPI con seguridad",
-      "content": "Post sobre seguridad con FastAPI"
-    }
-  ]
-}
-"""
