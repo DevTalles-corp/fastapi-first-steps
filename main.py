@@ -1,11 +1,12 @@
 
 import os
+from datetime import datetime
 from fastapi import FastAPI, Query, Body, HTTPException, Path
 from pydantic import BaseModel, Field, field_validator, EmailStr
 from typing import Optional, List, Union, Literal
 from math import ceil
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
+from sqlalchemy import create_engine, Integer, String, Text, DateTime
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./blog.db")
 print("Conectado a: ", DATABASE_URL)
@@ -24,10 +25,23 @@ class Base(DeclarativeBase):
     pass
 
 
+class PostORM(Base):
+    __tablename__ = "posts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    create_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow)
+
+
+Base.metadata.create_all(bind=engine)  # dev
+
+
 def get_db():
     db = SessionLocal()
     try:
-
+        yield db
     finally:
         db.close()
 
