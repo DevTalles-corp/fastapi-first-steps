@@ -49,54 +49,6 @@ def get_db():
 
 app = FastAPI(title="Mini Blog")
 
-BLOG_POST = [
-    {"id": 1, "title": "Hola desde FastAPI",
-        "content": "Mi primer post con FastAPI"},
-    {"id": 2, "title": "Mi segundo Post con FastAPI",
-        "content": "Mi segundo post con FastAPI blablabla"},
-    {"id": 3, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones",
-        "tags": [
-            {"name": "Python"},
-            {"name": "fastapi"},
-            {"name": "Django"}
-        ]},
-    {"id": 4, "title": "Hola desde FastAPI",
-        "content": "Mi primer post con FastAPI"},
-    {"id": 5, "title": "Mi segundo Post con FastAPI",
-        "content": "Mi segundo post con FastAPI blablabla"},
-    {"id": 6, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones"},
-    {"id": 7, "title": "Hola desde FastAPI",
-        "content": "Mi primer post con FastAPI"},
-    {"id": 8, "title": "Mi segundo Post con FastAPI",
-        "content": "Mi segundo post con FastAPI blablabla"},
-    {"id": 9, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones"},
-    {"id": 10, "title": "Hola desde FastAPI",
-        "content": "Mi primer post con FastAPI"},
-    {"id": 11, "title": "Mi segundo Post con FastAPI",
-        "content": "Mi segundo post con FastAPI blablabla"},
-    {"id": 12, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones",
-        "tags": [
-            {"name": "Python"},
-            {"name": "fastapi"},
-            {"name": "Django"}
-        ]},
-    {"id": 13, "title": "Hola desde FastAPI",
-        "content": "Mi primer post con FastAPI"},
-    {"id": 14, "title": "Mi segundo Post con FastAPI",
-        "content": "Mi segundo post con FastAPI blablabla"},
-    {"id": 15, "title": "Django vs FastAPI",
-        "content": "FastAPI es más rápido por x razones",
-        "tags": [
-            {"name": "Python"},
-            {"name": "fastapi"},
-            {"name": "Django"}
-        ]},
-]
-
 
 class Tag(BaseModel):
     name: str = Field(..., min_length=2, max_length=30,
@@ -307,26 +259,33 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
 
 
 @app.put("/posts/{post_id}", response_model=PostPublic, response_description="Post actualizado", response_model_exclude_none=True)
-def update_post(post_id: int, data: PostUpdate):
-    for post in BLOG_POST:
-        if post["id"] == post_id:
-            # {"title": "Ricardo", "content": None}
-            playload = data.model_dump(exclude_unset=True)
-            if "title" in playload:
-                post["title"] = playload["title"]
-            if "content" in playload:
-                post["content"] = playload["content"]
-            return post
+def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db)):
 
-    # setattr()
+    post = db.get(PostORM, post_id)
 
-    raise HTTPException(status_code=404, detail="Post no encontrado")
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
+
+    updates = data.model_dump(exclude_unset=True)
+
+    for key, value in updates.items():
+        setattr(post, key, value)
+
+    db.add(post)
+    db.commit()
+    db.refresh(post)
+
+    return post
 
 
-@app.delete("/posts/{post_id}", status_code=204)
-def delete_post(post_id: int):
-    for index, post in enumerate(BLOG_POST):
-        if post["id"] == post_id:
-            BLOG_POST.pop(index)
-            return
-    raise HTTPException(status_code=404, detail="Post no encontrado")
+@app.delete("/posts/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(post_id: int, db: Session = Depends(get_db)):
+    post = db.get(PostORM, post_id)
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post no encontrado")
+
+    db.delete(post)
+    db.commit()
+
+    return
