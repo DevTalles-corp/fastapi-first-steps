@@ -6,11 +6,13 @@ from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
 from typing import Optional, List, Union, Literal
 from math import ceil
 from sqlalchemy import create_engine, Integer, String, Text, DateTime, select, func, UniqueConstraint, ForeignKey, Table, Column
-from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase, Mapped, mapped_column, relationship, selectinload, joinedload
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from dotenv import load_dotenv
 
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./blog.db")
-print("Conectado a: ", DATABASE_URL)
+
 
 engine_kwargs = {}
 if DATABASE_URL.startswith("sqlite"):
@@ -261,15 +263,28 @@ def list_posts(
 def filter_by_tags(
     tags: List[str] = Query(
         ...,
-        min_length=2,
+        min_length=1,
         description="Una o más etiquetas. Ejemplo: ?tags=python&tags=fastapi"
-    )
+    ),
+    db: Session = Depends(get_db)
 ):
-    tags_lower = [tag.lower() for tag in tags]
+    normalized_tag_names = [tag.strip().lower() for tag in tags if tag.strip()]
 
-    return [
-        post for post in BLOG_POST if any(tag["name"].lower() in tags_lower for tag in post.get("tags", []))
-    ]
+    if not normalized_tag_names:
+        return []
+
+    post_list = (
+        select(PostORM)
+        .options(
+            selectinload(PostORM.tags),
+            joinedload(PostORM.author),
+        ).where(PostORM.tags.any(func.lower(TagORM.name).in_(normalized_tag_names)))
+        .order_by(PostORM.id.asc())
+    )
+
+    posts = db.execute(post_list).scalars().all()
+
+    return posts
 
 
 @app.get("/posts/{post_id}", response_model=Union[PostPublic, PostSummary], response_description="Post encontrado")
