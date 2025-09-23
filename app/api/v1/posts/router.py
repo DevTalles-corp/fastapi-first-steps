@@ -1,8 +1,8 @@
 
 from math import ceil
-from fastapi import APIRouter, Query, Depends, Path, status
+from fastapi import APIRouter, Query, Depends, Path, status, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import HTTPException, IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from typing import List, Optional, Union, Literal
 from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,
