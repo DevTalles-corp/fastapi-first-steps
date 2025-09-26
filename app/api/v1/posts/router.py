@@ -12,6 +12,15 @@ from .repository import PostRepository
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
+def get_fake_user():
+    return {"username": "ricardo", "role": "admin"}
+
+
+@router.get("/me")
+def read_me(user: dict = Depends(get_fake_user)):
+    return {"user": user}
+
+
 @router.get("", response_model=PaginatedPost)
 def list_posts(
     text: Optional[str] = Query(
