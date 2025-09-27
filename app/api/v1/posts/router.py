@@ -8,6 +8,7 @@ from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,
                       PostCreate, PostUpdate, PostSummary)
 from .repository import PostRepository
+from app.core.security import oauth2_scheme
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -170,3 +171,8 @@ def delete_post(post_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(
             status_code=500, detail="Error al eliminar el post")
+
+
+@router.get("/secure")
+def secure_endpoint(token: str = Depends(oauth2_scheme)):
+    return {"message": "Acceso con token", "token_recibido": token}
