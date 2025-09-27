@@ -8,18 +8,9 @@ from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,
                       PostCreate, PostUpdate, PostSummary)
 from .repository import PostRepository
-from app.core.security import oauth2_scheme
+from app.core.security import oauth2_scheme, get_current_user
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
-
-def get_fake_user():
-    return {"username": "ricardo", "role": "admin"}
-
-
-@router.get("/me")
-def read_me(user: dict = Depends(get_fake_user)):
-    return {"user": user}
 
 
 @router.get("", response_model=PaginatedPost)
@@ -114,13 +105,13 @@ def get_post(post_id: int = Path(
 
 
 @router.post("", response_model=PostPublic, response_description="Post creado (OK)", status_code=status.HTTP_201_CREATED)
-def create_post(post: PostCreate, db: Session = Depends(get_db)):
+def create_post(post: PostCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     repository = PostRepository(db)
     try:
         post = repository.create_post(
             title=post.title,
             content=post.content,
-            author=(post.author.model_dump() if post.author else None),
+            author=user,
             tags=[tag.model_dump() for tag in post.tags],
         )
         db.commit()
@@ -136,7 +127,7 @@ def create_post(post: PostCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{post_id}", response_model=PostPublic, response_description="Post actualizado", response_model_exclude_none=True)
-def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db)):
+def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
 
     repository = PostRepository(db)
     post = repository.get(post_id)
@@ -157,7 +148,7 @@ def update_post(post_id: int, data: PostUpdate, db: Session = Depends(get_db)):
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(post_id: int, db: Session = Depends(get_db)):
+def delete_post(post_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     repository = PostRepository(db)
     post = repository.get(post_id)
 
