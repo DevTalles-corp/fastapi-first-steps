@@ -14,7 +14,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(
         tz=timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -28,7 +28,7 @@ def decode_token(token: str) -> dict:
     return playload
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
 
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
