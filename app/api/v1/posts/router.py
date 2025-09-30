@@ -9,8 +9,25 @@ from .schemas import (PostPublic, PaginatedPost,
                       PostCreate, PostUpdate, PostSummary)
 from .repository import PostRepository
 from app.core.security import oauth2_scheme, get_current_user
+import time
+import asyncio
+import threading
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+# @router.get("/sync")
+# def sync_endpoint():
+#     print("SYNC theread: ", threading.current_thread().name)
+#     time.sleep(8)
+#     return {"message": "Función síncrona termino"}
+
+
+# @router.get("/async")
+# async def async_endpoint():
+#     print("ASYNC theread: ", threading.current_thread().name)
+#     await asyncio.sleep(8)
+#     return {"message": "Función asíncrona termino"}
 
 
 @router.get("", response_model=PaginatedPost)
