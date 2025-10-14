@@ -3,8 +3,9 @@ from operator import ge
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from app.api.v1.tags import repository
 from app.api.v1.tags.repository import TagRepository
-from app.api.v1.tags.schemas import TagCreate, TagPublic
+from app.api.v1.tags.schemas import TagCreate, TagPublic, TagUpdate
 from app.core.db import get_db
 from app.core.security import get_current_user
 
@@ -36,3 +37,34 @@ def create_tag(tag: TagCreate, db: Session = Depends(get_db), user=Depends(get_c
     except SQLAlchemyError:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error al crear el tag")
+
+
+@router.put("/{tag_id}", response_model=TagPublic)
+def update_tag(
+    tag_id: int,
+    payload: TagUpdate,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    repository = TagRepository(db)
+    tag = repository.update(tag_id, name=payload.name)
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag no encontrado")
+
+    db.commit()
+    return TagPublic.model_validate(tag)
+
+
+@router.delete(
+    "/{tag_id}",
+    status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_tag(tag_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    repository = TagRepository(db)
+    delete = repository.delete(tag_id)
+
+    if not delete:
+        raise HTTPException(status_code=404, detail="Tag no encontrado")
+
+    db.commit()
+    return None

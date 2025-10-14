@@ -13,6 +13,10 @@ class TagRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def get(self, tag_id: int) -> Optional[TagORM]:
+        tag_find = select(TagORM).where(TagORM.id == tag_id)
+        return self.db.execute(tag_find).scalar_one_or_none()
+
     def list_tags(
         self,
         search: Optional[str],
@@ -61,3 +65,22 @@ class TagRepository:
         self.db.add(tag_obj)
         self.db.flush()
         return tag_obj
+
+    def update(self, tag_id: int, name: str) -> Optional[TagORM]:
+        tag = self.get(tag_id)
+        if not tag:
+            return None
+        if name is not None:
+            tag.name = name.strip().lower()
+
+        self.db.add(tag)
+        self.db.flush()
+        self.db.refresh(tag)
+        return tag
+
+    def delete(self, tag_id: int) -> bool:
+        tag = self.get(tag_id)
+        if not tag:
+            return False
+        self.db.delete(tag)
+        return True
