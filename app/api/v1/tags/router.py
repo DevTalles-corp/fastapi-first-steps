@@ -68,3 +68,17 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db), user=Depends(get_curr
 
     db.commit()
     return None
+
+
+@router.get("/popular/top")
+def get_most_popular_tag(
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
+):
+    repository = TagRepository(db)
+    row = repository.most_popular()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="No hay tags en uso")
+
+    return row
