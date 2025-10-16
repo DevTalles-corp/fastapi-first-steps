@@ -7,7 +7,8 @@ from app.api.v1.tags import repository
 from app.api.v1.tags.repository import TagRepository
 from app.api.v1.tags.schemas import TagCreate, TagPublic, TagUpdate
 from app.core.db import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, require_admin, require_editor, require_user
+from app.models.user import User
 
 
 router = APIRouter(prefix="/tags", tags=["tags"])
@@ -27,7 +28,7 @@ def list_tags(
 
 
 @router.post("", response_model=TagPublic, response_description="Post creado (OK)", status_code=status.HTTP_201_CREATED)
-def create_tag(tag: TagCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def create_tag(tag: TagCreate, db: Session = Depends(get_db), _editor: User = Depends(require_editor)):
     repository = TagRepository(db)
     try:
         tag_created = repository.create_tag(name=tag.name)
@@ -44,7 +45,7 @@ def update_tag(
     tag_id: int,
     payload: TagUpdate,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)
+    _editor: User = Depends(require_editor)
 ):
     repository = TagRepository(db)
     tag = repository.update(tag_id, name=payload.name)
@@ -59,7 +60,7 @@ def update_tag(
     "/{tag_id}",
     status_code=status.HTTP_204_NO_CONTENT
 )
-def delete_tag(tag_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+def delete_tag(tag_id: int, db: Session = Depends(get_db), _admin: User = Depends(require_admin)):
     repository = TagRepository(db)
     delete = repository.delete(tag_id)
 
@@ -73,7 +74,7 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db), user=Depends(get_curr
 @router.get("/popular/top")
 def get_most_popular_tag(
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)
+    _user: User = Depends(require_user)
 ):
     repository = TagRepository(db)
     row = repository.most_popular()
