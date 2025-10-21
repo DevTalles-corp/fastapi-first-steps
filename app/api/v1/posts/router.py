@@ -136,6 +136,7 @@ def create_post(post: Annotated[PostCreate, Depends(PostCreate.as_form)], image:
             title=post.title,
             content=post.content,
             author=user,
+            category_id=post.category_id,
             tags=[tag.model_dump() for tag in post.tags],
             image_url=image_url,
         )

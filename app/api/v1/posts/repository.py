@@ -1,8 +1,10 @@
 
 from math import ceil
 from typing import Optional, List, Tuple
+from fastapi import Depends
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload, joinedload
+from app.core.security import get_current_user
 from app.models import PostORM, TagORM, User
 
 
@@ -61,7 +63,7 @@ class PostRepository:
             select(PostORM)
             .options(
                 selectinload(PostORM.tags),
-                joinedload(PostORM.author),
+                joinedload(PostORM.user),
             ).where(PostORM.tags.any(func.lower(TagORM.name).in_(normalized_tag_names)))
             .order_by(PostORM.id.asc())
         )
@@ -73,14 +75,6 @@ class PostRepository:
         author_obj = self.db.execute(
             select(User).where(User.email == email)
         ).scalar_one_or_none()
-
-        if author_obj:
-            return author_obj
-
-        author_obj = User(name=name,
-                          email=email)
-        self.db.add(author_obj)
-        self.db.flush()
 
         return author_obj
 
@@ -100,14 +94,14 @@ class PostRepository:
         self.db.flush()
         return tag_obj
 
-    def create_post(self, title: str, content: str, author: Optional[dict], tags: List[dict], image_url: str) -> PostORM:
+    def create_post(self, title: str, content: str, tags: List[dict], image_url: str, category_id: Optional[int], author: User = Depends(get_current_user)) -> PostORM:
         author_obj = None
         if author:
             author_obj = self.ensure_author(
-                author['username'], author['email'])
+                author.full_name, author.email)
 
         post = PostORM(title=title, content=content,
-                       image_url=image_url, author=author_obj)
+                       image_url=image_url, user=author_obj, category_id=category_id)
 
         names = tags[0]["name"].split(",")
         for name in names:
