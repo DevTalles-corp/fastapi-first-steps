@@ -7,6 +7,7 @@ from app.api.v1.posts.router import router as post_router
 from app.api.v1.auth.router import router as auth_router
 from app.api.v1.uploads.router import router as upload_router
 from app.api.v1.tags.router import router as tag_router
+from app.api.v1.categories.router import router as category_router
 from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
     app.include_router(post_router)
     app.include_router(tag_router)
     app.include_router(upload_router)
+    app.include_router(category_router)
 
     os.makedirs(MEDIA_DIR, exist_ok=True)
     app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
