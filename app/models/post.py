@@ -26,6 +26,7 @@ class PostORM(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    slug: Mapped[str] = mapped_column(String(160), unique=True, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     image_url = mapped_column(String(300), nullable=True)
 
