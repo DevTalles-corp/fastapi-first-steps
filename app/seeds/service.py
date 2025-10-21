@@ -1,9 +1,9 @@
 
 
 from contextlib import contextmanager
-import select
 from typing import Optional
 from pwdlib import PasswordHash
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
@@ -91,6 +91,13 @@ def seed_tags(db: Session) -> None:
                 db.add(TagORM(name=data["name"]))
 
 
+def run_all() -> None:
+    with SessionLocal() as db:
+        seed_users(db)
+        seed_categories(db)
+        seed_tags(db)
+
+
 def run_users() -> None:
     with SessionLocal() as db:
         seed_users(db)
@@ -103,4 +110,4 @@ def run_categories() -> None:
 
 def run_tags() -> None:
     with SessionLocal() as db:
-        seed_tags()
+        seed_tags(db)
